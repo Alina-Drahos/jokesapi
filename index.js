@@ -56,7 +56,20 @@ const joke = req.body.joke;
 });
 
 // Define a route to delete a joke
-app.delete('/jokes/:id',                                                                                                                                                                                                                                                                                                                                                                                                                                        );
+app.delete('/jokes/:id', (req,res) =>{
+
+    // Get the Joke Id from the request parameter
+   const jokeId = req.params.id;
+
+   // Find the joke with the matching Id
+   const jokeIndex = jokes.findIndex(joke=> joke.id == jokeId);
+
+   // Remove the joke from the array
+   const deletedJoke =jokes.splice(jokeIndex,1)[0];
+
+   res.send({message: `Joke deleted successfully ${deletedJoke.joke}`});
+
+});                                                                                                                                                                                                                                                                                                                                                                                                                                       
 
 // Start the  REST API server
 app.listen(port, ()=> console.log(`Jokes API listening on port ${port}`));
