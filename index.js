@@ -1,3 +1,8 @@
+// read env vars from .env file
+require('dotenv').config();
+const { Configuration, PlaidApi, Products, PlaidEnvironments} = require('plaid');
+const util = require('util');
+
 // Add middleware / dependencies
 const express = require('express')
 const bodyParser = require('body-parser');
@@ -31,7 +36,7 @@ app.get('/', (req,res)=> {
 //Define a route to retrieve all jokes
 app.get('/jokes', (req,res)=>{
 res.send(jokes);
-});
+}); 
 
 // Define a route to retrieve a random joke
 app.get('/randomjoke',(req,res)=>{
@@ -69,7 +74,62 @@ app.delete('/jokes/:id', (req,res) =>{
 
    res.send({message: `Joke deleted successfully ${deletedJoke.joke}`});
 
-});                                                                                                                                                                                                                                                                                                                                                                                                                                       
+});
+
+const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID;
+const PLAID_SECRET = process.env.PLAID_SECRET;
+const PLAID_ENV = 'sandbox';
+
+
+const configuration = new Configuration({
+    basePath: PlaidEnvironments[PLAID_ENV],
+    baseOptions: {
+      headers: {
+        'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
+        'PLAID-SECRET': PLAID_SECRET,
+        'Plaid-Version': '2020-09-14',
+      },
+    },
+  });
+
+  
+
+  const client = new PlaidApi(configuration);
+
+  const prettyPrintResponse = (response) => {
+    console.log(util.inspect(response.data, { colors: true, depth: 4 }));
+  };
+
+app.get('/api/create_link_token', (request, response, next) =>{
+    Promise.resolve()
+    .then(async function(){
+        const configs = {
+            user: {
+              // This should correspond to a unique id for the current user.
+              client_user_id: 'user-id',
+            },
+            client_name: 'Plaid Quickstart',
+            products: ["auth","transactions"],
+            country_codes: ["US","CA"],
+            language: 'en',
+          };
+          
+           if (["auth","transactions"].includes(Products.Statements)) {
+             const statementConfig = {
+               end_date: moment().format('YYYY-MM-DD'),
+               start_date: moment().subtract(30, 'days').format('YYYY-MM-DD'),
+             }
+             configs.statements = statementConfig;
+           }
+
+           console.log(configuration);
+          const createTokenResponse = await client.linkTokenCreate(configs);
+
+          prettyPrintResponse(createTokenResponse);
+          response.json(createTokenResponse.data);
+    })
+    .catch(next);
+})
 
 // Start the  REST API server
 app.listen(port, ()=> console.log(`Jokes API listening on port ${port}`));
